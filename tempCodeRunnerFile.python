@@ -1,0 +1,23 @@
+import joblib
+
+# Load the model from file
+model = joblib.load('trained_model')
+
+# Print the model's properties
+print(model)
+
+from tensorflow.keras.models import load_model
+
+# Load the model
+model = load_model('trained_model')
+
+# Summarize the model
+model.summary()
+
+import torch
+
+# Load the model
+model = torch.load('trained_model')
+
+# Print the model
+print(model)

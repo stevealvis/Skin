@@ -73,7 +73,165 @@ window.onclick = function(event) {
 } 
 
 
+// Tab switching functions
+function showSymptomsTab() {
+  document.getElementById('symptomsSection').style.display = 'block';
+  document.getElementById('imageSection').style.display = 'none';
+  document.getElementById('symptomsTab').classList.add('active');
+  document.getElementById('imageTab').classList.remove('active');
+  // Hide result div when switching tabs
+  document.getElementById('resultdiv').style.display = 'none';
+}
+
+function showImageTab() {
+  document.getElementById('symptomsSection').style.display = 'none';
+  document.getElementById('imageSection').style.display = 'block';
+  document.getElementById('imageTab').classList.add('active');
+  document.getElementById('symptomsTab').classList.remove('active');
+  // Hide result div when switching tabs
+  document.getElementById('resultdiv').style.display = 'none';
+}
+
+// Image upload functionality
+const uploadArea = document.getElementById('uploadArea');
+const imageInput = document.getElementById('skinImageInput');
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+const scanBtn = document.getElementById('scanBtn');
+const imageForm = document.getElementById('imageUploadForm');
+const imageLoading = document.getElementById('imageLoading');
+
+// Click to upload
+if (uploadArea) {
+  uploadArea.addEventListener('click', () => {
+    imageInput.click();
+  });
+
+  // Drag and drop
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = '#e7f3ff';
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.background = '#f8f9fa';
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.background = '#f8f9fa';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      imageInput.files = files;
+      handleImageSelect(files[0]);
+    }
+  });
+}
+
+// File input change
+if (imageInput) {
+  imageInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handleImageSelect(e.target.files[0]);
+    }
+  });
+}
+
+function handleImageSelect(file) {
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('Please select a valid image file');
+    return;
+  }
+
+  // Validate file size (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    alert('File size must be less than 10MB');
+    return;
+  }
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewImg.src = e.target.result;
+    imagePreview.style.display = 'block';
+    scanBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  const imageInput = document.getElementById('skinImageInput');
+  const imagePreview = document.getElementById('imagePreview');
+  const scanBtn = document.getElementById('scanBtn');
+  if (imageInput) imageInput.value = '';
+  if (imagePreview) imagePreview.style.display = 'none';
+  if (scanBtn) scanBtn.disabled = true;
+}
+
 $(document).ready( function(){
+  
+  // Image form submission (moved inside document.ready)
+  const imageForm = document.getElementById('imageUploadForm');
+  if (imageForm) {
+    imageForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const imageInput = document.getElementById('skinImageInput');
+      if (!imageInput.files.length) {
+        alert('Please select an image first');
+        return;
+      }
+
+      const formData = new FormData(imageForm);
+      const imageLoading = document.getElementById('imageLoading');
+      const scanBtn = document.getElementById('scanBtn');
+      
+      // Show loading
+      imageLoading.style.display = 'block';
+      scanBtn.disabled = true;
+      document.getElementById('resultdiv').style.display = 'none';
+
+      try {
+        const response = await fetch('{% url "scan_image" %}', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Show results
+          document.getElementById('diseasefield').innerText = data.predicteddisease || 'Unknown';
+          document.getElementById('percentage').innerText = (data.confidencescore || '0') + "%";
+          var percent = parseFloat(data.confidencescore || 0);
+          var disease = data.predicteddisease || '';
+          
+          $('#percentage').css('width', percent + "%");
+          document.getElementById('diseasesearch').innerText = disease;
+          $("#href").attr("href", "https://www.google.com/search?q=" + disease);
+          document.getElementById('consultdoctor').innerText = data.consultdoctor || 'Dermatologist';
+          
+          // Show result div
+          $("#resultdiv").show("slow");
+          $('html,body').animate({
+            scrollTop: $("#resultdiv").offset().top},
+            'slow');
+        } else {
+          alert('Error: ' + (data.error || 'Prediction failed'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+      } finally {
+        imageLoading.style.display = 'none';
+        scanBtn.disabled = false;
+      }
+    });
+  }
 
 
 $("#predict").click(function () {
@@ -193,11 +351,26 @@ $("#predict").click(function () {
     <br>
     <div class="text-center"> 
       <h3>
-          Identify possible conditions and treatment related to your symptoms.
+          Identify possible conditions and treatment related to your symptoms or image.
       </h3><br>
-            <button onclick="Functionshow()" class="btn btn-primary dropdown-toggle">Add symptoms</button>
+      
+      <!-- Toggle between Symptoms and Image Scan -->
+      <div class="btn-group" role="group" style="margin-bottom: 20px;">
+        <button type="button" class="btn btn-primary active" id="symptomsTab" onclick="showSymptomsTab()">
+          <i class="fa fa-list"></i> Check by Symptoms
+        </button>
+        <button type="button" class="btn btn-primary" id="imageTab" onclick="showImageTab()">
+          <i class="fa fa-camera"></i> Scan Image
+        </button>
+      </div>
     </div>
   </div >
+  
+  <!-- Symptoms Section -->
+  <div id="symptomsSection">
+    <div class="text-center"> 
+      <button onclick="Functionshow()" class="btn btn-primary dropdown-toggle">Add symptoms</button>
+    </div>
 
   <div id="myDropdown" class="drop-content">
 
@@ -258,6 +431,47 @@ $("#predict").click(function () {
                           </div>
              </div>
         </div>
+  </div>
+  </div>
+  
+  <!-- Image Scan Section -->
+  <div id="imageSection" style="display: none;">
+    <div class="container" style="max-width: 600px; margin: 0 auto;">
+      <div class="card">
+        <div class="card-header text-center">
+          <h5>Upload Skin Image for Analysis</h5>
+        </div>
+        <div class="card-body">
+          <form id="imageUploadForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="upload-area" id="uploadArea" style="border: 3px dashed #007bff; border-radius: 10px; padding: 40px; text-align: center; background: #f8f9fa; cursor: pointer; margin-bottom: 20px;">
+              <input type="file" id="skinImageInput" name="skin_image" accept="image/*" style="display: none;" required>
+              <i class="fa fa-cloud-upload" style="font-size: 48px; color: #007bff; margin-bottom: 20px;"></i>
+              <h5>Click to upload or drag and drop</h5>
+              <p style="color: #6c757d; font-size: 14px;">Supported: JPG, PNG, JPEG (Max 10MB)</p>
+            </div>
+            
+            <div id="imagePreview" style="display: none; margin-bottom: 20px;">
+              <img id="previewImg" style="max-width: 100%; max-height: 300px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" alt="Preview">
+              <button type="button" onclick="removeImage()" class="btn btn-danger btn-sm mt-2">Remove Image</button>
+            </div>
+            
+            <div class="text-center">
+              <button type="submit" class="btn btn-success" id="scanBtn" disabled>
+                <i class="fa fa-search"></i> Scan Image
+              </button>
+            </div>
+            
+            <div class="loading text-center" id="imageLoading" style="display: none; margin-top: 20px;">
+              <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+              <p>Analyzing image...</p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
   <br>

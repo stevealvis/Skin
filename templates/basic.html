@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
     
-   <title>predico</title>
+   <title>Skin Disease Prediction</title>
    
    <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
    <link rel="stylesheet" href="{% static 'homepage/css.css' %}">
@@ -37,19 +37,54 @@
     background-position: 100% 100%;
     background-repeat:   no-repeat;
     background-size:     cover;
+    
 }
 
 
   body{
 
-  background-image: url( "{% static 'homepage/gray.jpg' %}");
+  background-color: skyblue;
+  background-image: url("{% static 'logo/gray.jpg' %}");
   background-attachment: fixed;
   opacity: 0.93;
   background-repeat: no-repeat;
-  
+  margin:0 ,0, 0, 0;
   background-size:cover;
 
   }
+  .marquee {
+    display: flex;
+    overflow: hidden;
+    white-space: nowrap;
+    animation: marquee 10s linear infinite;
+}
+.marquee .card {
+  display: inline-block;
+  margin-right: 20px;
+  padding: 10px;
+  background:#E0E5E5;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-title, .card-text {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes marquee {
+  0% {
+      transform: translateX(10%);
+  }
+  50% {
+      transform: translateX(-8%);
+  }
+  100% {
+      transform: translateX(10%);
+  }
+}
+
 
 
 </style>
@@ -72,16 +107,10 @@
 
 
 
-      <div class="container-fluid">
-
-          <div class="page-header mt-1 mb-1 ml-1 ">
-          <h1>PREDICO</h1>   
-          <h6>Be your own doctor </h6>
-        </div>
       
       
-          <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #1b405a;">
-              <a class="navbar-brand" href="{% url 'home' %}">Predico </a>
+          <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #1b405a; min-height: 90px;">
+              <a class="navbar-brand" href="{% url 'home' %}"><h1>Skin Disease Prediction </h1></a>
               <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent">
           <span class="navbar-toggler-icon"></span>
               </button>
@@ -192,7 +221,7 @@
    <div class="row">
       <div class="col">
          <a href="{% url 'sign_in_admin' %}">
-  <img  alt="admin" src="{% static 'homepage/admin.png' %}"  class="img">
+  <img  alt="admin" src="{% static 'logo/admin.png' %}"  class="img">
   </a>
       </div>
   
@@ -204,7 +233,7 @@
   
       <div class="col">
   <a href="{% url 'sign_in_patient' %}">
-  <img  alt="patient" src="{% static 'homepage/patient.png' %}"  class="img">
+  <img  alt="patient" src="{% static 'logo/patient.png' %}"  class="img">
   </a>
       </div>
     </div>

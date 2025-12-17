@@ -8,6 +8,7 @@ urlpatterns = [
 
     path('patient_ui', views.patient_ui , name='patient_ui'),
     path('checkdisease', views.checkdisease, name="checkdisease"),
+    path('scan_image', views.scan_image, name="scan_image"),
     path('pviewprofile/<str:patientusername>', views.pviewprofile , name='pviewprofile'),
     path('pconsultation_history', views.pconsultation_history , name='pconsultation_history'),
     path('consult_a_doctor', views.consult_a_doctor , name='consult_a_doctor'),

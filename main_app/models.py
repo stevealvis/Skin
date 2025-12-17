@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.postgres.fields import ArrayField
+import json
 
 from datetime import date
 
@@ -66,9 +66,32 @@ class diseaseinfo(models.Model):
 
     diseasename = models.CharField(max_length = 200)
     no_of_symp = models.IntegerField()
-    symptomsname = ArrayField(models.CharField(max_length=200))
+    symptomsname = models.TextField()  # Stores JSON array as string
     confidence = models.DecimalField(max_digits=5, decimal_places=2)
     consultdoctor = models.CharField(max_length = 200)
+    skin_image = models.ImageField(upload_to='skin_images/', blank=True, null=True)  # For image-based prediction
+    prediction_method = models.CharField(max_length=20, default='symptoms', choices=[('symptoms', 'Symptoms'), ('image', 'Image Scan')])
+    
+    def __init__(self, *args, **kwargs):
+        # Convert list to JSON string if provided
+        if 'symptomsname' in kwargs and isinstance(kwargs['symptomsname'], list):
+            kwargs['symptomsname'] = json.dumps(kwargs['symptomsname'])
+        super().__init__(*args, **kwargs)
+    
+    def get_symptomsname_list(self):
+        """Convert JSON string to list for access"""
+        if self.symptomsname:
+            try:
+                return json.loads(self.symptomsname)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+    
+    def save(self, *args, **kwargs):
+        # Convert list to JSON if it's still a list
+        if isinstance(self.symptomsname, list):
+            self.symptomsname = json.dumps(self.symptomsname)
+        super().save(*args, **kwargs)
 
 
 

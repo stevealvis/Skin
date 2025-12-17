@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'chats.apps.ChatsConfig',
     'accounts.apps.AccountsConfig',
     'main_app.apps.MainAppConfig',
+    'django.contrib.postgres',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,16 +78,21 @@ WSGI_APPLICATION = 'disease_prediction.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
+#DATABASES = {
+#    'default': {
+#           'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': 'root',
+#        'USER': 'skin',
+#        'PASSWORD': 'Anku',
+#        'HOST': 'localhost'
+#    }
+#}
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'predico',
-        'USER': 'postgres',
-        'PASSWORD': '1234',
-        'HOST': 'localhost'
-    }
-}
-
+      'default': {
+          'ENGINE': 'django.db.backends.sqlite3',
+          'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+      }
+  }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -129,3 +135,9 @@ STATICFILES_DIRS = [
 
     os.path.join(BASE_DIR,'templates')
 ]
+
+# Media files (User uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'

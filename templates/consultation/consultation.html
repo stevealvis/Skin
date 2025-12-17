@@ -273,7 +273,7 @@ img{ max-width:100%;}
           <p class="card-text">list of symptoms - 
 
               <ul class="list-group" >
-                {% for i in consultation.diseaseinfo.symptomsname %}
+                {% for i in consultation.diseaseinfo.get_symptomsname_list %}
                 <li class="list-group-item" style="background-color:aliceblue">{{i}}</li>
                 {% endfor %}
               </ul>

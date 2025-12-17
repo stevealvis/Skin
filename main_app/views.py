@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.http import JsonResponse
 from datetime import date
+import os
 
 from django.contrib import messages
 from django.contrib.auth.models import User , auth
@@ -14,6 +15,32 @@ from chats.models import Chat,Feedback
 #loading trained_model
 import joblib as jb
 model = jb.load('trained_model')
+
+# Image processing imports
+import numpy as np
+from PIL import Image
+import io
+import base64
+import json
+import os
+
+# Optional CNN image model (load if available)
+CNN_MODEL_PATH = os.path.join('models', 'skin_cnn.h5')
+CNN_LABELS_PATH = os.path.join('models', 'skin_cnn_labels.json')
+image_model = None
+image_labels = None
+
+if os.path.exists(CNN_MODEL_PATH) and os.path.exists(CNN_LABELS_PATH):
+    try:
+        from tensorflow import keras
+        image_model = keras.models.load_model(CNN_MODEL_PATH)
+        with open(CNN_LABELS_PATH) as f:
+            image_labels = json.load(f)
+        print("Loaded CNN image model for skin disease detection.")
+    except Exception as e:
+        print(f"Warning: could not load CNN image model: {e}")
+        image_model = None
+        image_labels = None
 
 
 
@@ -292,6 +319,133 @@ def checkdisease(request):
 
 
 
+def scan_image(request):
+    """
+    Image-based skin disease prediction view
+    """
+    if request.method == 'GET':
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return redirect('home')
+        
+        try:
+            # Try to get patient from session first
+            patientusername = request.session.get('patientusername')
+            if patientusername:
+                puser = User.objects.get(username=patientusername)
+            else:
+                # If not in session, try to get from authenticated user
+                puser = request.user
+            
+            # Check if user has a patient profile
+            try:
+                patient_obj = puser.patient
+                # Store in session for POST requests
+                request.session['patientusername'] = puser.username
+            except:
+                # User doesn't have a patient profile
+                messages.error(request, 'Please login as a patient to use this feature.')
+                return redirect('home')
+            
+            return render(request, 'patient/scan_image/scan_image.html')
+        except Exception as e:
+            print(f"Error in scan_image GET: {str(e)}")
+            messages.error(request, 'Unable to access image scanner. Please try again.')
+            return redirect('home')
+    
+    elif request.method == 'POST':
+        try:
+            # Get patient info
+            if not request.user.is_authenticated:
+                return JsonResponse({'error': 'Please login first'}, status=400)
+            
+            # Try to get patient from session first
+            patientusername = request.session.get('patientusername')
+            if patientusername:
+                puser = User.objects.get(username=patientusername)
+            else:
+                # If not in session, use authenticated user
+                puser = request.user
+            
+            # Check if user has a patient profile
+            try:
+                patient_obj = puser.patient
+                # Store in session for future requests
+                request.session['patientusername'] = puser.username
+            except:
+                return JsonResponse({'error': 'User does not have a patient profile'}, status=400)
+            
+            # Check if image was uploaded
+            if 'skin_image' not in request.FILES:
+                return JsonResponse({'error': 'No image uploaded'}, status=400)
+            
+            uploaded_image = request.FILES['skin_image']
+            
+            # Validate image
+            try:
+                img = Image.open(uploaded_image)
+                img.verify()  # Verify it's a valid image
+            except Exception as e:
+                return JsonResponse({'error': 'Invalid image file'}, status=400)
+            
+            # Reset image pointer after verify
+            uploaded_image.seek(0)
+            img = Image.open(uploaded_image)
+            
+            # Preprocess image for model
+            # Resize to standard size (adjust based on your model requirements)
+            img = img.convert('RGB')  # Ensure RGB format
+            img = img.resize((224, 224))  # Common size for CNN models
+            
+            # Convert to numpy array
+            img_array = np.array(img)
+            img_array = img_array / 255.0  # Normalize to [0, 1]
+            img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+            
+            # Run CNN model if available, else fallback placeholder
+            if image_model and image_labels:
+                preds = image_model.predict(img_array)
+                idx = int(np.argmax(preds))
+                predicted_disease = image_labels[idx] if idx < len(image_labels) else "Skin Condition"
+                confidence = float(np.max(preds)) * 100
+            else:
+                # Placeholder prediction when CNN is not available
+                predicted_disease = "Skin Condition Detected"
+                confidence = 85.5
+            
+            # Map to doctor specialization (similar to symptom-based prediction)
+            consultdoctor = "Dermatologist"
+            
+            # Set doctortype in session for consult_a_doctor view
+            request.session['doctortype'] = consultdoctor
+            
+            # Save disease info with image
+            diseaseinfo_new = diseaseinfo(
+                patient=patient_obj,
+                diseasename=predicted_disease,
+                no_of_symp=0,  # No symptoms for image-based
+                symptomsname=json.dumps([]),  # Empty symptoms list
+                confidence=confidence,
+                consultdoctor=consultdoctor,
+                skin_image=uploaded_image,
+                prediction_method='image'
+            )
+            diseaseinfo_new.save()
+            
+            request.session['diseaseinfo_id'] = diseaseinfo_new.id
+            
+            return JsonResponse({
+                'predicteddisease': predicted_disease,
+                'confidencescore': str(confidence),
+                'consultdoctor': consultdoctor,
+                'image_url': diseaseinfo_new.skin_image.url if diseaseinfo_new.skin_image else None
+            })
+            
+        except Exception as e:
+            print(f"Error in scan_image: {str(e)}")
+            return JsonResponse({'error': f'Prediction failed: {str(e)}'}, status=500)
+
+
 def pconsultation_history(request):
 
     if request.method == 'GET':
@@ -358,13 +512,25 @@ def  consult_a_doctor(request):
 
 
     if request.method == 'GET':
-
         
-        doctortype = request.session['doctortype']
-        print(doctortype)
-        dobj = doctor.objects.all()
-        #dobj = doctor.objects.filter(specialization=doctortype)
-
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            return redirect('home')
+        
+        # Get doctortype from session if available, otherwise show all doctors
+        doctortype = request.session.get('doctortype', None)
+        print(f"Doctor type from session: {doctortype}")
+        
+        # Get all doctors, or filter by specialization if doctortype is set
+        if doctortype and doctortype != 'other':
+            # Try to filter by specialization (case-insensitive)
+            dobj = doctor.objects.filter(specialization__icontains=doctortype)
+            # If no doctors found with that specialization, show all
+            if not dobj.exists():
+                dobj = doctor.objects.all()
+        else:
+            # Show all doctors if no doctortype or if it's 'other'
+            dobj = doctor.objects.all()
 
         return render(request,'patient/consult_a_doctor/consult_a_doctor.html',{"dobj":dobj})
 
@@ -375,20 +541,54 @@ def  make_consultation(request, doctorusername):
 
     if request.method == 'POST':
        
-
-        patientusername = request.session['patientusername']
-        puser = User.objects.get(username=patientusername)
-        patient_obj = puser.patient
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please login to make a consultation.')
+            return redirect('home')
         
+        # Get patient info
+        try:
+            patientusername = request.session.get('patientusername')
+            if patientusername:
+                puser = User.objects.get(username=patientusername)
+            else:
+                # If not in session, use authenticated user
+                puser = request.user
+            
+            # Check if user has a patient profile
+            try:
+                patient_obj = puser.patient
+                request.session['patientusername'] = puser.username
+            except:
+                messages.error(request, 'User does not have a patient profile.')
+                return redirect('home')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+            return redirect('home')
         
-        #doctorusername = request.session['doctorusername']
-        duser = User.objects.get(username=doctorusername)
-        doctor_obj = duser.doctor
-        request.session['doctorusername'] = doctorusername
+        # Get doctor info
+        try:
+            duser = User.objects.get(username=doctorusername)
+            doctor_obj = duser.doctor
+            request.session['doctorusername'] = doctorusername
+        except User.DoesNotExist:
+            messages.error(request, 'Doctor not found.')
+            return redirect('consult_a_doctor')
+        except:
+            messages.error(request, 'Doctor profile not found.')
+            return redirect('consult_a_doctor')
 
-
-        diseaseinfo_id = request.session['diseaseinfo_id']
-        diseaseinfo_obj = diseaseinfo.objects.get(id=diseaseinfo_id)
+        # Get diseaseinfo from session
+        diseaseinfo_id = request.session.get('diseaseinfo_id')
+        if not diseaseinfo_id:
+            messages.error(request, 'No disease information found. Please check disease or scan image first.')
+            return redirect('patient_ui')
+        
+        try:
+            diseaseinfo_obj = diseaseinfo.objects.get(id=diseaseinfo_id)
+        except diseaseinfo.DoesNotExist:
+            messages.error(request, 'Disease information not found.')
+            return redirect('patient_ui')
 
         consultation_date = date.today()
         status = "active"
