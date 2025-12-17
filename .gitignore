@@ -56,5 +56,10 @@ trained_model/
 *.h5
 *.pkl
 
+
 # Temporary files
 tempCodeRunnerFile.*
+
+# Font files (too large for git)
+templates/signin_page/fonts/
+templates/homepage/bootstrap/
