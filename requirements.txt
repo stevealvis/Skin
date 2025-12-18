@@ -8,3 +8,4 @@ Pillow>=8.0.0
 numpy>=1.19.0
 tensorflow>=2.10
 kaggle>=1.6.0
+gunicorn
