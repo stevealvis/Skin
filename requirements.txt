@@ -1,38 +1,16 @@
-  
-
-
-
 psycopg2
-
-
-
-#tensorflow>=2.10
-kaggle>=1.6.0
-
-#numpy==2.0.2
-
-
-#joblib>=1.2.0
-#scikit-learn==1.5.0
-
-
 
 Django>=3.2
 gunicorn
-
-numpy>=1.26,<2.1
-scikit-learn==1.5.0
-joblib>=1.2.0
-
-tensorflow>=2.10
 pandas
 Pillow
-
-
-
-
-  # if used
 opencv-python  # if used in your CNN
+
+numpy==1.26.4
+scikit-learn==1.5.0
+tensorflow==2.15.0
+joblib>=1.2.0
+scipy>=1.10
 
 
 
