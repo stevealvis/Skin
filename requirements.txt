@@ -3,12 +3,12 @@
 
 
 psycopg2
-#Django==2.2.5
-Pillow>=8.0.0
+
+
 
 #tensorflow>=2.10
 kaggle>=1.6.0
-gunicorn
+
 #numpy==2.0.2
 
 
@@ -16,12 +16,23 @@ gunicorn
 #scikit-learn==1.5.0
 
 
-Django>=4.0
-scikit-learn>=1.2.0
-joblib>=1.2.0
-numpy>=1.24
-pandas>=1.5
-tensorflow>=2.12  # if used
-opencv-python  # if used in your CNN
+
+Django>=3.2
 gunicorn
+
+numpy>=1.26,<2.1
+scikit-learn==1.5.0
+joblib>=1.2.0
+
+tensorflow>=2.10
+pandas
+Pillow
+
+
+
+
+  # if used
+opencv-python  # if used in your CNN
+
+
 
