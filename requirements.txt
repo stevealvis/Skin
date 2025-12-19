@@ -1,12 +1,15 @@
   
 
 joblib==0.14.1
-scikit-learn
+
 psycopg2
 Django==2.2.5
 Pillow>=8.0.0
-numpy>=1.19.0
+
 tensorflow>=2.10
 kaggle>=1.6.0
 gunicorn
+numpy==2.0.2
+scikit-learn==1.5.0
+
 
