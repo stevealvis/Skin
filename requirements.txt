@@ -1,17 +1,14 @@
-Django>=3.2,<5.0
+Django<5.0,>=3.2
 gunicorn
 
 numpy==1.26.4
 scikit-learn==1.5.0
-joblib>=1.2.0
 scipy>=1.10.0
+joblib>=1.2.0
 
 tensorflow==2.15.1
-keras==2.15.0
-psycopg[binary]==3.1.19
-psycopg2
-pandas
 Pillow
 opencv-python
+pandas
 
-
+psycopg[binary]==3.1.19
