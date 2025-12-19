@@ -24,6 +24,41 @@ import base64
 import json
 import os
 
+import os, json
+import joblib as jb
+
+_symptom_model = None
+_image_model = None
+_image_labels = None
+
+
+def get_symptom_model():
+    global _symptom_model
+    if _symptom_model is None:
+        _symptom_model = jb.load(os.path.join('models', 'trained_model'))
+    return _symptom_model
+
+
+def get_image_model():
+    global _image_model, _image_labels
+
+    if _image_model is None:
+        from tensorflow import keras
+
+        if not os.path.exists(CNN_MODEL_PATH):
+            return None, None
+
+        _image_model = keras.models.load_model(CNN_MODEL_PATH)
+
+        with open(CNN_LABELS_PATH) as f:
+            _image_labels = json.load(f)
+
+    return _image_model, _image_labels
+
+
+
+
+
 # Optional CNN image model (load if available)
 CNN_MODEL_PATH = os.path.join('models', 'skin_cnn.h5')
 CNN_LABELS_PATH = os.path.join('models', 'skin_cnn_labels.json')
