@@ -45,16 +45,20 @@ if os.path.exists(CNN_MODEL_PATH) and os.path.exists(CNN_LABELS_PATH):
 
 
 
-def home(request):
+#def home(request):
 
-  if request.method == 'GET':
+ # if request.method == 'GET':
         
-      if request.user.is_authenticated:
-        return render(request,'homepage/index.html')
+  #    if request.user.is_authenticated:
+   #     return render(request,'homepage/index.html')
 
-      else :
-        return render(request,'homepage/index.html')
+    #  else :
+     #   return render(request,'homepage/index.html')
+from django.views.decorators.http import require_http_methods
 
+@require_http_methods(["GET", "HEAD"])
+def home(request):
+    return render(request, 'homepage/index.html')
 
 
    
